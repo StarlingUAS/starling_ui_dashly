@@ -1,6 +1,6 @@
 from setuptools import setup
 
-package_name = 'src/starling-ui-dashly'
+package_name = 'starling_ui_dashly'
 
 setup(
     name=package_name,
@@ -20,7 +20,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-             'talker = py_pubsub.publisher_member_function:main'
+             'talker = starling_ui_dashly.publisher_member_function:main'
         ],
     },
 )
