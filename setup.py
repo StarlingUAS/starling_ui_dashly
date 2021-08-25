@@ -20,7 +20,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-             'talker = starling_ui_dashly.publisher_member_function:main'
+             'dashboard = starling_ui_dashly.panel:main'
         ],
     },
 )
