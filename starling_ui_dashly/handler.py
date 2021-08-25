@@ -1,52 +1,21 @@
 import os
-import multiprocessing
 import threading
 import signal
 from typing import *
 import dataclasses
 import functools
 
-import rclpy
-from rclpy.node import Node
-from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
-from rclpy.executors import MultiThreadedExecutor
-
 import dash
+import flask
 import dash_bootstrap_components as dbc
 import dash_core_components as dcc
 import dash_html_components as html
 import plotly.express as px
 import pandas as pd
 
-from std_msgs.msg import String
+from ament_index_python.packages import get_package_share_directory
 
-class Dashboard_Node(Node):
-    def __init__(self):
-        super().__init__(self.__class__.__name__)
-
-        # ROS Setup
-        self.mission_start_publisher_ = self.create_publisher(String, 'mission_start', 10)
-        self.emergency_stop_publisher_ = self.create_publisher(String, 'emergency_stop', 10)
-        self.emergency_cutoff_publisher_ = self.create_publisher(String, 'emergency_cutoff', 10)
-        timer_period = 0.5  # seconds
-
-    def call_mission_start(self):
-        msg = String()
-        msg.data = 'mission_start'
-        self.mission_start_publisher_.publish(msg)
-        self.get_logger().info('mission_start published')
-
-    def call_emergency_stop(self):
-        msg = String()
-        msg.data = 'emergency_stop'
-        self.emergency_stop_publisher_.publish(msg)
-        self.get_logger().info('emergency_stop published')
-
-    def call_emergency_cutoff(self):
-        msg = String()
-        msg.data = 'emergency_cutoff'
-        self.emergency_cutoff_publisher_.publish(msg)
-        self.get_logger().info('emergency_cutoff published')
+PACKAGE_NAME = 'starling_ui_dashly'
 
 # Helper methods for registering callbacks
 @dataclasses.dataclass
@@ -79,8 +48,11 @@ class Dashboard_Handler():
             external_stylesheets=self.external_stylesheets,
             external_scripts=self.external_scripts)
 
+        self._register_static_assets()
+
         self._generate_app_layout()
         self._register_callbacks()
+
 
     def _generate_app_layout(self):
         self.app.layout = html.Div(children=[
@@ -100,12 +72,27 @@ class Dashboard_Handler():
     def _generate_navigation_bar(self):
         self.layout_navbar = dbc.Navbar([
                 dbc.Row([
-                        # dbc.Col(html.Img(src=))
+                        dbc.Col(html.Img(src='/static/starling.jpg', height="30px")),
                         dbc.Col(dbc.NavbarBrand("Starling Control Panel", className="ml-2"))
                     ],
                     align="center",
                     no_gutters=True
                 ),
+                dbc.Row([
+                        dbc.Nav([
+                            dbc.NavLink("Internal link", href="/l/components/nav"),
+                            dbc.NavLink("External link", href="https://github.com"),
+                            dbc.NavLink(
+                                "External relative",
+                                href="/l/components/nav",
+                                external_link=True,
+                            ),
+                        ])
+                    ],
+                    no_gutters=True,
+                    className="ml-auto flex-nowrap mt-3 mt-md-0",
+                    align="center"
+                )
             ],
             color="dark",
             dark=True
@@ -117,6 +104,16 @@ class Dashboard_Handler():
         for k, v in vars(self.__class__).items():
             if isinstance(v, CallbackMethod):
                 self.app.callback(*v.args, **v.kwargs)(functools.partial(v, self))
+
+    def _register_static_assets(self):
+        package_share_directory = get_package_share_directory(PACKAGE_NAME)
+        image_directory = os.path.join(package_share_directory, 'static')
+        list_of_images = [os.path.basename(x) for x in os.listdir(image_directory) if x.endswith('png') or x.endswith('jpg')]
+        def serve_image(image_path):
+            if image_path not in list_of_images:
+                raise Exception('"{}" is excluded from the allowed static files'.format(image_path))
+            return flask.send_from_directory(image_directory, image_path)
+        self.app.server.route(f'/static/<image_path>')(serve_image)
 
     @app_callback(
         dash.dependencies.Output('container-button-basic', 'children'),
@@ -132,36 +129,3 @@ class Dashboard_Handler():
 
     def run_server(self, **kwargs):
         self.app.run_server(**kwargs)
-
-def ros2_thread(node):
-    print('entering ros2 thread')
-    rclpy.spin(node)
-    print('leaving ros2 thread')
-
-
-def main(args=None):
-    rclpy.init()
-
-    dashboard_node = Dashboard_Node()
-    threading.Thread(target=ros2_thread, args=[dashboard_node]).start()
-
-    def sigint_handler(signal, frame):
-        """
-        SIGINT handler
-        We have to know when to tell rclpy to shut down, because
-        it's in a child thread which would stall the main thread
-        shutdown sequence. So we use this handler to call
-        rclpy.shutdown() and then call the previously-installed
-        SIGINT handler for Flask
-        """
-        rclpy.shutdown()
-        if prev_sigint_handler is not None:
-            prev_sigint_handler(signal)
-
-    prev_sigint_handler = signal.signal(signal.SIGINT, sigint_handler)
-
-    dashboard_handler = Dashboard_Handler(dashboard_node)
-    dashboard_handler.run_server(debug=True)
-
-if __name__ == '__main__':
-    main()

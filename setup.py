@@ -1,4 +1,6 @@
 from setuptools import setup
+from glob import glob
+import os
 
 package_name = 'starling_ui_dashly'
 
@@ -10,6 +12,8 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
+        (os.path.join('share', package_name, 'launch'), glob('launch/*.launch.py')),
+        (os.path.join('share', package_name, 'static'), glob('static/*')),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -20,7 +24,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-             'dashboard = starling_ui_dashly.panel:main'
+             'dashboard = starling_ui_dashly.main:main'
         ],
     },
 )
