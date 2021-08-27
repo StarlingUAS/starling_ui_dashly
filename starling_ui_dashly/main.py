@@ -21,14 +21,18 @@ import plotly.express as px
 import pandas as pd
 
 # Functionality resides in these submodules
-from .node import Dashboard_Node
-from .handler import Dashboard_Handler
+try:
+    from .node import Dashboard_Node
+    from .handler import Dashboard_Handler
+except Exception:
+    from node import Dashboard_Node
+    from handler import Dashboard_Handler
 
 
 def ros2_thread(node):
-    print('entering ros2 thread')
+    print('Entering ros2 thread')
     rclpy.spin(node)
-    print('leaving ros2 thread')
+    print('Leaving ros2 thread')
 
 
 def main(args=None):

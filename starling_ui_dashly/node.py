@@ -10,9 +10,10 @@ class Dashboard_Node(Node):
 
         # ROS Setup
         self.mission_start_publisher_ = self.create_publisher(String, 'mission_start', 10)
+        self.mission_abort_publisher_ = self.create_publisher(String, 'mission_abort', 10)
         self.emergency_stop_publisher_ = self.create_publisher(String, 'emergency_stop', 10)
-        self.emergency_cutoff_publisher_ = self.create_publisher(String, 'emergency_cutoff', 10)
-        timer_period = 0.5  # seconds
+        self.timer_period = 0.01  # seconds
+        self.emergency_stop_timer = None
 
     def call_mission_start(self):
         msg = String()
@@ -20,14 +21,23 @@ class Dashboard_Node(Node):
         self.mission_start_publisher_.publish(msg)
         self.get_logger().info('mission_start published')
 
-    def call_emergency_stop(self):
+    def toggle_emergency_stop(self, send):
+        if self.emergency_stop_timer:
+            self.emergency_stop_timer.cancel()
+            self.emergency_stop_timer = None
+
+        if send:
+            self.emergency_stop_timer = self.create_timer(self.timer_period, self.send_emergency_stop)
+        self.get_logger().info(f"ESTOP {'ENABLED' if send else 'DISABLED'}")
+
+    def send_emergency_stop(self):
         msg = String()
         msg.data = 'emergency_stop'
         self.emergency_stop_publisher_.publish(msg)
         self.get_logger().info('emergency_stop published')
 
-    def call_emergency_cutoff(self):
+    def call_mission_abort(self):
         msg = String()
-        msg.data = 'emergency_cutoff'
-        self.emergency_cutoff_publisher_.publish(msg)
-        self.get_logger().info('emergency_cutoff published')
+        msg.data = 'mission_abort'
+        self.mission_abort_publisher_.publish(msg)
+        self.get_logger().info('mission_abort published')
