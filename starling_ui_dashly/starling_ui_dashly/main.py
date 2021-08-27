@@ -34,8 +34,7 @@ def ros2_thread(node):
     rclpy.spin(node)
     print('Leaving ros2 thread')
 
-
-def main(args=None):
+def setup():
     rclpy.init()
 
     dashboard_node = Dashboard_Node()
@@ -55,9 +54,18 @@ def main(args=None):
             prev_sigint_handler(signal)
 
     prev_sigint_handler = signal.signal(signal.SIGINT, sigint_handler)
-
     dashboard_handler = Dashboard_Handler(dashboard_node)
-    dashboard_handler.run_server(debug=True)
+    return dashboard_handler
+
+
+def main(args=None):
+    dashboard_handler = setup()
+    dashboard_handler.run_server(debug=True, host='0.0.0.0', port=3000)
+
+def server(args=None):
+    dashboard_handler = setup()
+    return dashboard_handler.app.server
+
 
 if __name__ == '__main__':
     main()
