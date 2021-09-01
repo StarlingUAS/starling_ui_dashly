@@ -283,7 +283,7 @@ class Trajectory_Component(Dashboard_Component):
         if json_store:
             store = json.loads(json_store)
         else:
-            store = {'traj': []}
+            store = {'traj': [TEST_DATA]}
 
         ctx = dash.callback_context
         if ctx.triggered:
