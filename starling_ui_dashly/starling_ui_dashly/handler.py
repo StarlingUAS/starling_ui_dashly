@@ -51,7 +51,7 @@ class Dashboard_Handler():
         self.estop_active = False
         self.components = {
             'control': Control_Panel_Component(self.dashboard_node),
-            'traj': Trajectory_Component()
+            'traj': Trajectory_Component(self.dashboard_node)
         }
 
         # Set up handling for different URLs
@@ -73,7 +73,7 @@ class Dashboard_Handler():
         self._generate_app_layout()
         register_callbacks(self, self.app) # From Base Class
 
-        for k, v in self.components.items():
+        for k, v in self.components.items(): # Register callbacks from component class members
             register_callbacks(v, self.app)
 
     def _register_static_assets(self):

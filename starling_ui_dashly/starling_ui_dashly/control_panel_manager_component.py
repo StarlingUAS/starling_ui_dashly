@@ -47,6 +47,7 @@ class Control_Panel_Component(Dashboard_Component):
     def __generate_control_panel_mission_control(self):
         return html.Div([
             html.H2("MISSION CONTROL"),
+            html.Hr(),
             dbc.Row([
                 dbc.Col(html.Div([
                     html.H3("Start Mission (/mission_start)"),
@@ -71,6 +72,7 @@ class Control_Panel_Component(Dashboard_Component):
             ],
             justify="center",
             ),
+            html.Hr(),
             dbc.Row([
                 dbc.Col(html.H2("SYSTEM STATUS")),
                 dbc.Col(dbc.FormGroup([
