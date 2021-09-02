@@ -20,6 +20,9 @@ class Control_Panel_Component(Dashboard_Component):
     def generate_layout(self):
         return self._generate_control_panel()
 
+    def generate_pre_layout(self):
+        return html.Div([])
+
     def _generate_control_panel(self):
         # Main page
         self.layout_control_panel = html.Div([

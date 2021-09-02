@@ -68,7 +68,61 @@ Support for the `/emergency_stop` topic should be built into all running control
 
 ### Load Trajectory screen (`/load_trajectory`)
 
-IN PROGRESS
+![load trajectory](load_trajectory.png)
+
+#### Loading a trajectory
+
+One or more trajectory files can be uploaded using this page to be submitted to Starling to be run on one or more physical drones.
+These can be uploaded by either clicking and selecting in the window, or by dragging and dropping files into the area.
+Loaded trajectories will show in the list below the uploading box. There, the trajectories can be inspected and individually removed.
+The trajectories can also be inspected in 3D on the right hand screen to ensure the correct trajectories have been loaded.
+
+
+#### Single Trajectory Files
+
+The format for these will be the following for all file formats.
+The first row will be a header row where the first column is the `time_from_start` and the remaining columns are the target x, y and z position:
+
+
+| Time      | x | y | z |
+| ----------- | ----------- | ----------- | ----------- |
+| 0.0      | 0.0      | 5.0 | 0.0 |
+| 1.5   | 2.0        | 3.0 | -1.0 |
+| 4.5      | 6.74      | 0.02 | -2.0 |
+
+##### Supported File Formats:
+These must be parseable by the `pandas` python utility
+
+* .csv
+* .xls
+
+#### Multiple Trajectory Files
+
+The utility will expect a JSON file (ending in `.json`) of the following format
+
+```json
+{
+    "1": {
+        "columns": ["time", "x", "y", "z"],
+        "data": [
+            [0.0, 0.0, 5.0, 0.0],
+            [1.5, 2.0, 3.0, -1.0],
+            [4.5, 6.75, 0.02, -2.0]
+        ]
+    },
+    "2": {
+        "columns": ["time", "x", "y", "z"],
+        "data: [...]
+    }
+}
+```
+
+The `data` field of each trajectory block matches that of the single trajectory file. In each row, the first element is the `time_from_start`, and the remaining are the target x, y, and z position.
+
+#### Submitting the Trajectory
+
+Once happy with the loaded trajectories, pressing the `submit` button will send **all loaded trajectories** over the `\submit_trajectories` service to the Allocator node to be executed by the vehicle.
+The trajectories will be converted into [JointTrajectory.msg](https://docs.ros2.org/foxy/api/trajectory_msgs/msg/JointTrajectory.html) and [JointTrajectoryPoint.msg](https://docs.ros2.org/foxy/api/trajectory_msgs/msg/JointTrajectoryPoint.html).
 
 ## Implmenetation Details
 

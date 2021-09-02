@@ -90,7 +90,9 @@ class Dashboard_Handler():
 
 
     def _generate_app_layout(self):
-        self.app.layout = html.Div(children=[
+        preload = [v.generate_pre_layout() for k, v in self.components.items()]
+
+        self.app.layout = html.Div(children=preload + [
             dcc.Location(id='url', refresh=False),
             self._generate_navigation_bar(),
             html.Div([
