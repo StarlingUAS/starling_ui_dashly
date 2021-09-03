@@ -225,7 +225,7 @@ class Trajectory_Component(Dashboard_Component):
                 # Allow multiple files to be uploaded
                 multiple=True
             ),
-            dbc.Button('Confirm & Submit Trajectories (/submit_trajectories)', color='primary', block=True),
+            dbc.Button('Confirm & Submit Trajectories (/submit_trajectories)', id="lt_submit_trajectory_btn", color='primary', block=True),
             html.Hr(),
             dbc.Row([
                 dbc.Col(html.H6("Uploaded Trajectories:", id="lt_upload_trajectory_header"), align="center"),
@@ -270,6 +270,18 @@ class Trajectory_Component(Dashboard_Component):
                 ])
                 for i, traj in enumerate(loaded_trajectories)
             ])
+
+    @app_callback(
+        Output("lt_submit_trajectory_btn", 'color'),
+        Input("lt_submit_trajectory_btn", "n_clicks"),
+        State("lt_store", 'data')
+    )
+    def __submit_trajectory(self, n_clicks, json_store):
+        if n_clicks and n_clicks > 0 and json_store:
+            store = json.loads(json_store)
+            self.dashboard_node.send_trajectory_allocation(store['traj'])
+            self.dashboard_node.get_logger().info('Request made')
+        return 'primary'
 
     @app_callback(
         [Output('lt_output_data_upload', 'children'),
