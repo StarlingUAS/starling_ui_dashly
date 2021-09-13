@@ -11,7 +11,7 @@ RUN pip3 install dash dash-bootstrap-components gunicorn pandas
 
 RUN mkdir -p ros_ws/src
 
-RUN git clone https://github.com/mhl787156/starling_allocator_msgs.git /ros_ws/src/starling_allocator_msgs
+RUN git clone https://github.com/mhl787156/starling_allocator.git /ros_ws/src/starling_allocator
 
 COPY starling_ui_dashly /ros_ws/src/starling_ui_dashly/
 

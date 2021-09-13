@@ -51,8 +51,9 @@ class Dashboard_Node(Node):
         while not self.trajectory_allocation_client_.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('service not available, waiting again...')
 
-        request = AllocateTrajectories.request()
+        request = AllocateTrajectories.Request()
 
+        rtraj = []
         for traj in trajectory_dict:
             jt = JointTrajectory()
             jt.points = []
@@ -61,9 +62,13 @@ class Dashboard_Node(Node):
                 d = Duration()
                 time = p['time']
                 d.sec = int(np.floor(time))
-                d.nanosec = int((time - d.sec) * 10e9)
+                d.nanosec = 0 #int((time - d.sec) * 10e9)
                 jtp.time_from_start = d
-                jtp.positions = [p['x'], p['y'], p['z']]
+                jtp.positions = list(map(float, [p['x'], p['y'], p['z']] ) )
                 jt.points.append(jtp)
+            rtraj.append(jt)
 
+        request.trajectories = rtraj
+        request.method = "random"
+        self.get_logger().info('The request is:\n' +str(request))
         self.trajectory_allocation_client_.call_async(request)

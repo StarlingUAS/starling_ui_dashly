@@ -5,11 +5,12 @@ import json
 import copy
 
 import dash
-import dash_table
+from dash import dcc, html, dash_table
+# import dash_table
 from dash.dependencies import Input, Output, State, MATCH, ALL
 import dash_bootstrap_components as dbc
-import dash_core_components as dcc
-import dash_html_components as html
+# import dash_core_components as dcc
+# import dash_html_components as html
 
 import plotly.graph_objects as go
 
