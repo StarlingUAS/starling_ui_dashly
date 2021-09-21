@@ -81,8 +81,12 @@ The trajectories can also be inspected in 3D on the right hand screen to ensure 
 #### Single Trajectory Files
 
 The format for these will be the following for all file formats.
-The first row will be a header row where the first column is the `time_from_start` and the remaining columns are the target x, y and z position:
+The first row will be a header row where the first column is the `time_from_start` and the remaining columns depend on the type of trajectory:
 
+- **position** - x, y, z, yaw (optional), yaw_rate (optional)
+- **velocity** - vx, vy, vz, yaw (optional), yaw_rate (optional)
+- **attitude** - pitch, roll, yaw, thrust (optional)
+- **rates** - pitch_rate, roll_rate, yaw_rate, thrust (optional)
 
 | Time      | x | y | z |
 | ----------- | ----------- | ----------- | ----------- |
@@ -123,6 +127,8 @@ The `data` field of each trajectory block matches that of the single trajectory 
 
 Once happy with the loaded trajectories, pressing the `submit` button will send **all loaded trajectories** over the `\submit_trajectories` service to the Allocator node to be executed by the vehicle.
 The trajectories will be converted into [JointTrajectory.msg](https://docs.ros2.org/foxy/api/trajectory_msgs/msg/JointTrajectory.html) and [JointTrajectoryPoint.msg](https://docs.ros2.org/foxy/api/trajectory_msgs/msg/JointTrajectoryPoint.html).
+
+An example allocator node is [given here](https://github.com/mhl787156/starling_allocator). The role of it is to distribute a list of trajectories to the vehicles by some method, either manually, by nearest point or some other metric.
 
 ## Implmenetation Details
 

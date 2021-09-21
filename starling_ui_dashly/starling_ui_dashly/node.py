@@ -8,6 +8,13 @@ from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 from starling_allocator_msgs.srv import AllocateTrajectories
 from builtin_interfaces.msg import Duration
 
+TRAJ_TYPE_MAP = {
+    'position': ['x', 'y', 'z'],
+    'velocity': ['vx', 'vy', 'vz'],
+    'attitude': ['pitch', 'roll', 'yaw'],
+    'rates': ['pitch_rate', 'roll_rate', 'yaw_rate']
+}
+
 class Dashboard_Node(Node):
     def __init__(self):
         super().__init__('dashboard_node')
@@ -45,6 +52,28 @@ class Dashboard_Node(Node):
         self.mission_abort_publisher_.publish(msg)
         self.get_logger().info('mission_abort published')
 
+    def is_valid_trajectory_dict(self, trajectory_dict):
+        self.get_logger().info("testing validity of trajectory dictionary")
+        types = []
+        for traj in trajectory_dict:
+            try:
+                keys = traj['data'][0].keys()
+            except Exception as e:
+                self.get_logger().info('No data read in, empty trajectory')
+                types.append('ERROR')
+                continue
+            found = False
+            for typ, v in TRAJ_TYPE_MAP.items():
+                if set(v).issubset(set(keys)):
+                    types.append(typ)
+                    found = True
+                    break
+            if not found:
+                self.get_logger().warn('Trajectory keys do not match any trajectory type')
+                types.append('ERROR')
+        return types
+
+
     def send_trajectory_allocation(self, trajectory_dict):
         self.get_logger().info('sending allocate trajectory service request')
 
@@ -53,8 +82,13 @@ class Dashboard_Node(Node):
 
         request = AllocateTrajectories.Request()
 
+        validities = self.is_valid_trajectory_dict(trajectory_dict)
+        if 'ERROR' in validities:
+            self.get_logger().error('Trajectory with error exists, sending aborted')
+            return
+
         rtraj = []
-        for traj in trajectory_dict:
+        for traj, valid in zip(trajectory_dict, validities):
             jt = JointTrajectory()
             jt.points = []
             for p in traj['data']:
@@ -64,7 +98,27 @@ class Dashboard_Node(Node):
                 d.sec = int(np.floor(time))
                 d.nanosec = 0 #int((time - d.sec) * 10e9)
                 jtp.time_from_start = d
-                jtp.positions = list(map(float, [p['x'], p['y'], p['z']] ) )
+
+                point = []
+                for k in TRAJ_TYPE_MAP[valid]:
+                    point.append(p[k])
+
+                if valid in ['position', 'velocity']:
+                    if 'yaw' in p:
+                        point.append(p['yaw'])
+                    if 'yaw_rate' in p:
+                        point.append(p['yaw_rate'])
+
+                elif valid in ['attitude', 'rates']:
+                    if 'thrust' in p:
+                        point.append(p['thrust'])
+
+                point = [float(p) for p in point]
+
+                if valid in ['position', 'attitude']:
+                    jtp.positions = point
+                elif valid in ['velocity', 'rates']:
+                    jtp.velocity = point
                 jt.points.append(jtp)
             rtraj.append(jt)
 

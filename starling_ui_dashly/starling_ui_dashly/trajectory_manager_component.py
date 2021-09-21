@@ -37,7 +37,12 @@ The trajectories will be converted into [JointTrajectory.msg](https://docs.ros2.
 #### Single Trajectory Files
 
 The format for these will be the following for all file formats.
-The first row will be a header row where the first column is the `time_from_start` and the remaining columns are the target x, y and z position:
+The first row will be a header row where the first column is the `time_from_start` and the remaining columns depend on the type of trajectory:
+
+- **position** - x, y, z, yaw (optional), yaw_rate (optional)
+- **velocity** - vx, vy, vz, yaw (optional), yaw_rate (optional)
+- **attitude** - pitch, roll, yaw, thrust (optional)
+- **rates** - pitch_rate, roll_rate, yaw_rate, thrust (optional)
 
 
 | Time      | x | y | z |
@@ -77,12 +82,12 @@ The `data` field of each trajectory block matches that of the single trajectory 
 '''
 
 TEST_DATAFRAME = pd.DataFrame([
-                [1, 0, 0, 1],
-                [2, 1, 0, 1],
-                [3, 1, 1, 1],
-                [4, 0, 1, 1],
-                [5, 0, 0, 1],
-            ], columns=['time', 'x', 'y', 'z'])
+                [2, 0, 0, 1, 0],
+                [5, 1, 0, 1, 0.5],
+                [10, 1, 1, 1, 1.0],
+                [15, 0, 1, 1, 1.5],
+                [20, 0, 0, 1, 2.0],
+            ], columns=['time', 'x', 'y', 'z', 'yaw'])
 
 TEST_DATA = {
             'filename': 'test_file.csv',
@@ -102,7 +107,7 @@ class Trajectory_Component(Dashboard_Component):
 
     def generate_pre_layout(self):
         return html.Div([
-            dcc.Store(id='lt_store'),
+            dcc.Store(id='lt_store')
         ])
 
     def parse_trajectory_from_file(self, contents, filename, date):
@@ -149,6 +154,7 @@ class Trajectory_Component(Dashboard_Component):
     def _generate_load_page(self):
         # Main page
         self.layout_control_panel = html.Div([
+            self.__submit_trajectory_modal_layout(),
             dbc.Row([
                 dbc.Col(
                     self.__generate_load_traj_panel(),
@@ -236,14 +242,21 @@ class Trajectory_Component(Dashboard_Component):
         ])
 
     def __generate_loaded_trajectory_list(self, loaded_trajectories):
+        validities = self.dashboard_node.is_valid_trajectory_dict(loaded_trajectories)
+        valid_colours = {
+            'position': 'primary',
+            'velocity': 'primary',
+            'attitude': 'success',
+            'rates': 'success',
+            'ERROR': 'error'
+        }
         if len(loaded_trajectories) <= 0:
             return dbc.ListGroup([dbc.ListGroupItem("No trajectories uploaded", color="info")])
         return dbc.ListGroup([
                 dbc.ListGroupItem([
-                #    [dbc.ListGroupItemHeading(f'{i}. {traj["filename"]}'),
-                #     dbc.ListGroupItemText(traj["df"].to_string())]
                     dbc.Row([
-                        dbc.Col(html.H6(f'{i+1}) {traj["filename"]}', style={"text-align": "left", "padding": "8px"}), width=6, align="center"),
+                        dbc.Col(html.H6([f'{i+1}) {traj["filename"]}', dbc.Badge(f'Traj Type: {valid}', color=valid_colours[valid], pill=True, style=dict(margin='3px'))],
+                            style={"text-align": "left", "padding": "8px"}), width=6, align="center"),
                         dbc.Col(dbc.ButtonGroup([
                             dbc.Button("Details", id={'type': "ld_traj_ui_btn_details", 'index': i}, color="info"),
                             dbc.Button("Duplicate", id={'type': "ld_traj_ui_btn_duplicate", 'index': i}, color="primary"),
@@ -269,20 +282,8 @@ class Trajectory_Component(Dashboard_Component):
                         is_open=False,
                     )
                 ])
-                for i, traj in enumerate(loaded_trajectories)
+                for i, (traj, valid) in enumerate(zip(loaded_trajectories, validities))
             ])
-
-    @app_callback(
-        Output("lt_submit_trajectory_btn", 'color'),
-        Input("lt_submit_trajectory_btn", "n_clicks"),
-        State("lt_store", 'data')
-    )
-    def __submit_trajectory(self, n_clicks, json_store):
-        if n_clicks and n_clicks > 0 and json_store:
-            store = json.loads(json_store)
-            self.dashboard_node.send_trajectory_allocation(store['traj'])
-            self.dashboard_node.get_logger().info('Request made')
-        return 'primary'
 
     @app_callback(
         [Output('lt_output_data_upload', 'children'),
@@ -349,6 +350,92 @@ class Trajectory_Component(Dashboard_Component):
             return not is_open
         return False
 
+    def __submit_trajectory_modal_layout(self):
+        return dbc.Modal(
+                [
+                    dbc.ModalHeader("Submitting a Trajectory"),
+                    dbc.ModalBody(id="lt_submit_trajectory_modal_body"),
+                    dbc.ModalFooter(html.Div([
+                        dcc.Link(
+                            dbc.Button("Submit and return to control panel", id="lt_submit_trajectory_modal_btn_submit", color="success"),
+                            href="/"
+                        ),
+                        dbc.Button("Cancel", id="lt_submit_trajectory_modal_btn_close", className="ml-auto", n_clicks=0, color="warning")
+                    ])
+                    ),
+                ],
+                id="lt_submit_trajectory_modal",
+                size="xl",
+                is_open=False,
+            )
+
+    @app_callback(
+        [Output("lt_submit_trajectory_modal", "is_open"),
+         Output("lt_submit_trajectory_modal_body", "children"),
+         Output("lt_submit_trajectory_modal_btn_submit", "disabled")],
+        [Input("lt_submit_trajectory_btn", "n_clicks"),
+         Input("lt_submit_trajectory_modal_btn_submit", "n_clicks"),
+         Input("lt_submit_trajectory_modal_btn_close", "n_clicks")],
+        [State("lt_submit_trajectory_modal", "is_open"),
+         State("lt_store", 'data')],
+    )
+    def __toggle_submit_trajectory_modal(self, n1, n2, n3, is_open, json_store):
+        if is_open and (n1 or n2 or n3):
+            ctx = dash.callback_context
+            if ctx.triggered:
+                trigger_id = ctx.triggered[0]['prop_id'].split('.')[0]
+
+                # Update list of trajectories if a new one uploaded
+                if trigger_id=='lt_submit_trajectory_modal_btn_submit':
+                    store = json.loads(json_store)
+                    self.dashboard_node.send_trajectory_allocation(store['traj'])
+                    self.dashboard_node.get_logger().info('Request made')
+
+            # Closing
+            return False, html.Div([]), False
+
+        if not json_store:
+            return False, html.Div([]), False
+
+        # Opening
+        store = json.loads(json_store)
+
+        validities = self.dashboard_node.is_valid_trajectory_dict(store['traj'])
+        valid_colours = {
+            'position': 'primary',
+            'velocity': 'primary',
+            'attitude': 'success',
+            'rates': 'success',
+            'ERROR': 'error'
+        }
+        layout = html.Div([
+            dcc.Markdown(
+                '''
+                ## Verify that these are the trajectories you wish to submit
+                If you are sure, click submit to submit the entries.
+                (The submit button will be disabled if there are any error trajectories)
+                '''
+            ),
+            dbc.ListGroup([
+                dbc.ListGroupItem([
+                    html.H6([f'{i+1}) {traj["filename"]}', dbc.Badge(f'Traj Type: {valid}', color=valid_colours[valid], pill=True, style=dict(margin='3px'))],
+                            style={"text-align": "left", "padding": "8px"}),
+                    dbc.Card(dbc.CardBody([
+                        dash_table.DataTable(
+                            columns=[{"name": i, "id": i} for i in traj['columns']],
+                            data=traj['data'],
+                            style_cell={'textAlign': 'left'},
+                        )
+                    ]),
+                    style={
+                        'height': '150px',
+                        'overflow': 'auto',
+                    })
+                ])
+                for i, (traj, valid) in enumerate(zip(store['traj'], validities))
+            ])
+        ])
+        return True, layout, any([v == 'ERROR' for v in validities])
 
     ############ VISUALISATION #########################
 
