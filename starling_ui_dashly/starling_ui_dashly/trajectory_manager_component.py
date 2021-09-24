@@ -354,7 +354,26 @@ class Trajectory_Component(Dashboard_Component):
         return dbc.Modal(
                 [
                     dbc.ModalHeader("Submitting a Trajectory"),
-                    dbc.ModalBody(id="lt_submit_trajectory_modal_body"),
+                    dbc.ModalBody(html.Div([
+                        dcc.Markdown(
+                            '''
+                            ## Verify that these are the trajectories you wish to submit
+                            If you are sure, click submit to submit the entries.
+                            (The submit button will be disabled if there are any error trajectories)
+                            '''
+                        ),
+                        dbc.Form([dbc.FormGroup([
+                            dbc.Label("Allocation Method:", className="mr-2"),
+                            dbc.Select(
+                                id="lt_submit_trajectory_modal_allocation_method_select",
+                                options=[{"label": m, "value": m} for m in self.dashboard_node.valid_methods],
+                                value=self.dashboard_node.valid_methods[0],
+                                className="mr-3",
+                                persistence=True,
+                            )
+                        ])], inline=True),
+                        html.Div(id="lt_submit_trajectory_modal_body")
+                    ])),
                     dbc.ModalFooter(html.Div([
                         dcc.Link(
                             dbc.Button("Submit and return to control panel", id="lt_submit_trajectory_modal_btn_submit", color="success"),
@@ -375,21 +394,30 @@ class Trajectory_Component(Dashboard_Component):
          Output("lt_submit_trajectory_modal_btn_submit", "disabled")],
         [Input("lt_submit_trajectory_btn", "n_clicks"),
          Input("lt_submit_trajectory_modal_btn_submit", "n_clicks"),
-         Input("lt_submit_trajectory_modal_btn_close", "n_clicks")],
+         Input("lt_submit_trajectory_modal_btn_close", "n_clicks"),
+         Input("lt_submit_trajectory_modal_allocation_method_select", "value")],
         [State("lt_submit_trajectory_modal", "is_open"),
-         State("lt_store", 'data')],
+         State("lt_store", 'data'),
+         State({'type': "lt_submit_trajectory_modal_manual_vehicle_select", 'index': ALL}, 'value')],
     )
-    def __toggle_submit_trajectory_modal(self, n1, n2, n3, is_open, json_store):
-        if is_open and (n1 or n2 or n3):
-            ctx = dash.callback_context
-            if ctx.triggered:
-                trigger_id = ctx.triggered[0]['prop_id'].split('.')[0]
+    def __toggle_submit_trajectory_modal(self, n1, n2, n3, allocation_method, is_open, json_store, vehicle_select):
+        ctx = dash.callback_context
 
-                # Update list of trajectories if a new one uploaded
-                if trigger_id=='lt_submit_trajectory_modal_btn_submit':
-                    store = json.loads(json_store)
-                    self.dashboard_node.send_trajectory_allocation(store['traj'])
-                    self.dashboard_node.get_logger().info('Request made')
+        if not ctx.triggered:
+            return False, html.Div([]), False
+
+        trigger_id = ctx.triggered[0]['prop_id'].split('.')[0]
+
+        is_allocation_method_change_trigger = trigger_id=='lt_submit_trajectory_modal_allocation_method_select'
+
+        if is_open and (n1 or n2 or n3) and not is_allocation_method_change_trigger:
+            # Update list of trajectories if a new one uploaded
+            if trigger_id=='lt_submit_trajectory_modal_btn_submit':
+                store = json.loads(json_store)
+                self.dashboard_node.send_trajectory_allocation(store['traj'], allocation_method,
+                    vehicle_select if vehicle_select else []
+                )
+                self.dashboard_node.get_logger().info('Request made')
 
             # Closing
             return False, html.Div([]), False
@@ -408,33 +436,45 @@ class Trajectory_Component(Dashboard_Component):
             'rates': 'success',
             'ERROR': 'error'
         }
-        layout = html.Div([
-            dcc.Markdown(
-                '''
-                ## Verify that these are the trajectories you wish to submit
-                If you are sure, click submit to submit the entries.
-                (The submit button will be disabled if there are any error trajectories)
-                '''
-            ),
-            dbc.ListGroup([
-                dbc.ListGroupItem([
-                    html.H6([f'{i+1}) {traj["filename"]}', dbc.Badge(f'Traj Type: {valid}', color=valid_colours[valid], pill=True, style=dict(margin='3px'))],
-                            style={"text-align": "left", "padding": "8px"}),
-                    dbc.Card(dbc.CardBody([
-                        dash_table.DataTable(
-                            columns=[{"name": i, "id": i} for i in traj['columns']],
-                            data=traj['data'],
-                            style_cell={'textAlign': 'left'},
+
+        vehic_namespace = []
+        if allocation_method=="manual":
+            vehic_namespace = self.dashboard_node.get_current_vehicle_namespaces()
+
+        layout_listgroup = []
+        for i, (traj, valid) in enumerate(zip(store['traj'], validities)):
+            header_row=[dbc.Col(html.H6([f'{i+1}) {traj["filename"]}', dbc.Badge(f'Traj Type: {valid}', color=valid_colours[valid], pill=True, style=dict(margin='3px'))],
+                        style={"text-align": "left", "padding": "8px"}), width=6, align="center")]
+            if allocation_method=="manual":
+                header_row.append(
+                    dbc.Col(dbc.Form([dbc.FormGroup([
+                        dbc.Label("Manual Allocation to Vehicle:", className="mr-2"),
+                        dbc.Select(
+                            id={'type': "lt_submit_trajectory_modal_manual_vehicle_select", 'index': i},
+                            options=[{"label": m, "value": m} for m in vehic_namespace],
+                            value=vehic_namespace[i % len(vehic_namespace)],
+                            className="mr-3",
+                            persistence=True,
                         )
-                    ]),
-                    style={
-                        'height': '150px',
-                        'overflow': 'auto',
-                    })
-                ])
-                for i, (traj, valid) in enumerate(zip(store['traj'], validities))
+                    ])], inline=True), width=6)
+                )
+            lgi = dbc.ListGroupItem([
+                dbc.Row(header_row, justify="between"),
+                dbc.Card(dbc.CardBody([
+                    dash_table.DataTable(
+                        columns=[{"name": i, "id": i} for i in traj['columns']],
+                        data=traj['data'],
+                        style_cell={'textAlign': 'left'},
+                    )
+                ]),
+                style={
+                    'height': '150px',
+                    'overflow': 'auto',
+                })
             ])
-        ])
+            layout_listgroup.append(lgi)
+
+        layout = dbc.ListGroup(layout_listgroup)
         return True, layout, any([v == 'ERROR' for v in validities])
 
     ############ VISUALISATION #########################

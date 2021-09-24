@@ -28,6 +28,12 @@ class Dashboard_Node(Node):
         self.timer_period = 0.01  # seconds
         self.emergency_stop_timer = None
 
+        self.valid_methods = [
+            'nearest',
+            'random',
+            'manual'
+        ]
+
     def call_mission_start(self):
         msg = Empty()
         self.mission_start_publisher_.publish(msg)
@@ -52,6 +58,20 @@ class Dashboard_Node(Node):
         self.mission_abort_publisher_.publish(msg)
         self.get_logger().info('mission_abort published')
 
+    def get_current_vehicle_namespaces(self):
+        topic_list = self.get_topic_names_and_types()
+        namespaces = set()
+        self.get_logger().info('Found the following topics:')
+        for topic_name, _ in topic_list:
+            self.get_logger().info(topic_name)
+            if 'mavros' in topic_name:
+                name = topic_name.split('/')[1]
+                if name == 'mavros':
+                    name = ''
+                namespaces.add(name)
+        self.get_logger().info(f'Found {len(namespaces)} namespaces: {",".join(namespaces)}')
+        return list(namespaces)
+
     def is_valid_trajectory_dict(self, trajectory_dict):
         self.get_logger().info("testing validity of trajectory dictionary")
         types = []
@@ -74,7 +94,7 @@ class Dashboard_Node(Node):
         return types
 
 
-    def send_trajectory_allocation(self, trajectory_dict):
+    def send_trajectory_allocation(self, trajectory_dict, allocation_method="nearest", manual_alloc=[]):
         self.get_logger().info('sending allocate trajectory service request')
 
         while not self.trajectory_allocation_client_.wait_for_service(timeout_sec=1.0):
@@ -123,6 +143,9 @@ class Dashboard_Node(Node):
             rtraj.append(jt)
 
         request.trajectories = rtraj
-        request.method = "random"
+        request.trajectory_types = validities
+        request.method = allocation_method
+        if allocation_method=="manual":
+            request.manual_allocation_targets = manual_alloc
         self.get_logger().info('The request is:\n' +str(request))
-        self.trajectory_allocation_client_.call_async(request)
+        future = self.trajectory_allocation_client_.call_async(request)
