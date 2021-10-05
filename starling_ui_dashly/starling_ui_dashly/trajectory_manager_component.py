@@ -493,7 +493,7 @@ class Trajectory_Component(Dashboard_Component):
                 dbc.Col(html.H3("Visualise Trajectories", style={"text-align": "left", "padding": "8px"}), width=4, align="center"),
                 dbc.Col(dbc.Form(dbc.FormGroup([
                     dbc.Label('Animation Interval (ms)'),
-                    dbc.Input(value=100, type='number', id='ld_graph_traj_visualisation_interval')
+                    dbc.Input(value=1000, type='number', id='ld_graph_traj_visualisation_interval')
                 ]), inline=True, style=dict(float="right")), width=8, align="center")
             ], justify="between"),
             html.H3(),
@@ -522,6 +522,8 @@ class Trajectory_Component(Dashboard_Component):
         store = json.loads(json_store)
         trajs = store['traj']
 
+        traj_types = self.dashboard_node.is_valid_trajectory_dict(trajs)
+
         fig = self.generate_new_plot()
 
         # Visulaisation_interval into seconds
@@ -529,9 +531,10 @@ class Trajectory_Component(Dashboard_Component):
 
         trajs_transpose = []
         max_time = 0
-
         # Make primary data
-        for traj in trajs:
+        for typ, traj in zip(traj_types, trajs):
+            if typ != 'position':
+                continue
             times = []
             xs = []
             ys = []
@@ -559,6 +562,9 @@ class Trajectory_Component(Dashboard_Component):
                     showlegend=True
                 )
             )
+
+        if max_time == 0:
+            return dash.no_update
 
         # Add extra traces for animations to run on
         for fdat in fig.data:
