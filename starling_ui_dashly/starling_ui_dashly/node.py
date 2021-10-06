@@ -138,7 +138,7 @@ class Dashboard_Node(Node):
                 if valid in ['position', 'attitude']:
                     jtp.positions = point
                 elif valid in ['velocity', 'rates']:
-                    jtp.velocity = point
+                    jtp.velocities = point
                 jt.points.append(jtp)
             rtraj.append(jt)
 
