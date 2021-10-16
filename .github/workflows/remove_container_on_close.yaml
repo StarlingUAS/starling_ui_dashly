@@ -21,8 +21,8 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
-          organisation: mickeyli789
-          image: test-build
+          organisation: uobflightlabstarling
+          image: starling-ui-dashly
           tag: ${{github.event.pull_request.head.ref}}
 
 
