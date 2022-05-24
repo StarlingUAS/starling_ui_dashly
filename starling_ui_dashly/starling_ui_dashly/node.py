@@ -115,8 +115,10 @@ class Dashboard_Node(Node):
                 jtp = JointTrajectoryPoint()
                 d = Duration()
                 time = p['time']
-                d.sec = int(np.floor(time))
-                d.nanosec = 0 #int((time - d.sec) * 10e9)
+                sec = int(np.floor(time))
+                nanosec = int((time - sec) * 1e9)
+                d.sec = sec
+                d.nanosec = nanosec
                 jtp.time_from_start = d
 
                 point = []
