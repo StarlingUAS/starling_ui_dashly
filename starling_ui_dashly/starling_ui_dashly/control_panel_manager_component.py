@@ -121,7 +121,22 @@ class Control_Panel_Component(Dashboard_Component):
          Input("mc_system_status_interval", "n_intervals")])
     def __control_panel_system_status_update(self, n_clicks, n_intervals):
         # Call self.dashboard_node.get_system_status()
-        return f"System status update at {get_time()}"
+        vehic_namespace = self.dashboard_node.get_current_vehicle_namespaces()
+        return html.Div([ 
+            html.P(f"System status update at {get_time()}"),
+            dbc.Row([
+                dbc.Col([
+                    html.H4(f"Abort {vehicle_name}"),
+                    dbc.Button(
+                        html.Img(src='/static/stop-button.png', style={"max-width": "75%"}),
+                        id=f"mc_btn_mission_abort_{vehicle_name}",
+                        size="sm",
+                        outline=True,
+                        color="warning"),
+                ])
+                for vehicle_name in vehic_namespace
+            ])
+        ])
 
     def __generate_control_panel_emergency_stop(self):
         return html.Div([

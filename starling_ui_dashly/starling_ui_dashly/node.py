@@ -58,6 +58,20 @@ class Dashboard_Node(Node):
         self.mission_abort_publisher_.publish(msg)
         self.get_logger().info('mission_abort published')
 
+    def send_emergency_stop_drone(self, drone_namespace):
+        msg = Empty()
+        emergency_stop_publisher_ = self.create_publisher(Empty, f'/{drone_namespace}/emergency_stop', 10)
+        emergency_stop_publisher_.publish(msg)
+        self.get_logger().info('emergency_stop published')
+        emergency_stop_publisher_.destroy()
+
+    def call_mission_abort_drone(self, drone_namespace):
+        msg = Empty()
+        mission_abort_publisher_ = self.create_publisher(Empty, f'/{drone_namespace}/mission_abort', 10)
+        mission_abort_publisher_.publish(msg)
+        self.get_logger().info(f'mission_abort published to {drone_namespace}')
+        mission_abort_publisher_.destroy()
+
     def get_current_vehicle_namespaces(self):
         topic_list = self.get_topic_names_and_types()
         namespaces = set()
