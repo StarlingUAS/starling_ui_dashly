@@ -27,6 +27,6 @@ run: main
 	docker run -it --rm --net=$(NETWORK) $(ENV) $(PORTS) -e USE_SIMULATED_TIME=true $(RUN_ARGS) mickeyli789/starling-ui-dashly:latest
 
 run_bash: main
-	docker run -it --rm --net=$(NETWORK) $(PORTS) -e USE_SIMULATED_TIME=true $(RUN_ARGS) mickeyli789/starling-ui-dashly:latest
+	docker run -it --rm --net=$(NETWORK) $(ENV) $(PORTS) -e USE_SIMULATED_TIME=true $(RUN_ARGS) mickeyli789/starling-ui-dashly:latest bash
 
 .PHONY: all main run run_bash

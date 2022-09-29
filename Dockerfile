@@ -7,7 +7,7 @@ RUN apt-get update \
         ros-foxy-mavros-msgs \
     && rm -rf /var/lib/apt/lists/
 
-RUN pip3 install Werkzeug==2.0.0 dash==2.0.0 dash-bootstrap-components==0.13.1 gunicorn pandas
+RUN pip3 install Werkzeug==2.0.0 dash==2.0.0 dash-bootstrap-components==0.13.1 flask==2.1.3 gunicorn pandas
 
 RUN mkdir -p ros_ws/src
 
