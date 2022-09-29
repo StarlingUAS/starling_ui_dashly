@@ -28,6 +28,8 @@ class Dashboard_Node(Node):
         self.timer_period = 0.01  # seconds
         self.emergency_stop_timer = None
 
+        self.current_vehicle_namespaces = []
+
         self.valid_methods = [
             'nearest',
             'random',
@@ -62,7 +64,7 @@ class Dashboard_Node(Node):
         msg = Empty()
         emergency_stop_publisher_ = self.create_publisher(Empty, f'/{drone_namespace}/emergency_stop', 10)
         emergency_stop_publisher_.publish(msg)
-        self.get_logger().info('emergency_stop published')
+        self.get_logger().info(f'emergency_stop published to {drone_namespace}')
         emergency_stop_publisher_.destroy()
 
     def call_mission_abort_drone(self, drone_namespace):
@@ -75,16 +77,17 @@ class Dashboard_Node(Node):
     def get_current_vehicle_namespaces(self):
         topic_list = self.get_topic_names_and_types()
         namespaces = set()
-        self.get_logger().info('Found the following topics:')
+        # self.get_logger().info('Found the following topics:')
         for topic_name, _ in topic_list:
-            self.get_logger().info(topic_name)
-            if 'mavros' in topic_name:
+            # self.get_logger().info(topic_name)
+            if 'mavros/state' in topic_name:
                 name = topic_name.split('/')[1]
                 if name == 'mavros':
                     name = ''
                 namespaces.add(name)
         self.get_logger().info(f'Found {len(namespaces)} namespaces: {",".join(namespaces)}')
-        return list(namespaces)
+        self.current_vehicle_namespaces = list(namespaces)
+        return self.current_vehicle_namespaces
 
     def is_valid_trajectory_dict(self, trajectory_dict):
         self.get_logger().info("testing validity of trajectory dictionary")

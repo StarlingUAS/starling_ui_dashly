@@ -34,6 +34,8 @@ ros2 launch starling_ui_dashly dashboard_gunicorn.launxch.xml
 
 which will run a user facing server on https://0.0.0.0:3000
 
+> The port number can be specified with environment varibale `PORT` 
+
 ### Docker
 
 The project can also be run using a dockerfile, either build the local file after cloning as follows
@@ -47,6 +49,10 @@ Or use the built version on docker hub
 ```
 docker run --it -rm --network=host mickeyli789/starling_ui_dashly:latest
 ```
+
+> Specify port number using `-e PORT=3002` for example. 
+
+To make things easier, a MAKEFILE has been provided. Therefore to build and run the project, run `make run` in the root of this project.
 
 ## Usage
 

@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <launch>
 
-    <executable cmd="gunicorn -b 0.0.0.0:3000 'starling_ui_dashly.main:server()'" output="screen"/>
+    <executable cmd="gunicorn -b 0.0.0.0:$(env PORT 3000) 'starling_ui_dashly.main:server()'" output="screen"/>
 
 </launch>

@@ -28,6 +28,6 @@ RUN . /opt/ros/foxy/setup.sh \
     && colcon build --packages-select starling_ui_dashly starling_allocator_msgs --cmake-force-configure \
     && rm -r build
 
-EXPOSE 3000
+ENV PORT 3000
 
 cmd ["ros2", "launch", "starling_ui_dashly", "dashboard_gunicorn.launch.xml"]

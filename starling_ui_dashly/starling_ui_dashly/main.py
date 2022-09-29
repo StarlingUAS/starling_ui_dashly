@@ -24,7 +24,7 @@ from ament_index_python.packages import get_package_share_directory
 try:
     from .node import Dashboard_Node
     from .handler import Dashboard_Handler
-except Exception:
+except ModuleNotFoundError:
     from node import Dashboard_Node
     from handler import Dashboard_Handler
 

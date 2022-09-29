@@ -1,7 +1,8 @@
 import pandas as pd
+import json
 
 import dash
-from dash.dependencies import Input, Output, State
+from dash.dependencies import Input, Output, State, MATCH, ALL
 from dash import dcc, html
 import dash_bootstrap_components as dbc
 # import dash_core_components as dcc
@@ -123,20 +124,50 @@ class Control_Panel_Component(Dashboard_Component):
         # Call self.dashboard_node.get_system_status()
         vehic_namespace = self.dashboard_node.get_current_vehicle_namespaces()
         return html.Div([ 
-            html.P(f"System status update at {get_time()}"),
+            html.P(f"System status update at {get_time()}, {len(vehic_namespace)} vehicles detected"),
             dbc.Row([
                 dbc.Col([
-                    html.H4(f"Abort {vehicle_name}"),
-                    dbc.Button(
-                        html.Img(src='/static/stop-button.png', style={"max-width": "75%"}),
-                        id=f"mc_btn_mission_abort_{vehicle_name}",
-                        size="sm",
-                        outline=True,
-                        color="warning"),
+                    html.Div([
+                        dbc.Button(
+                            f"Abort {vehicle_name}",
+                            id={'type': f"mc_btn_mission_abort_drone", 'index': vehicle_name},
+                            size="lg",
+                            block=True,
+                            color="warning"),
+                        dbc.Button(
+                            f"ESTOP {vehicle_name}",
+                            id={'type': f"mc_btn_emergency_stop_drone", 'index': vehicle_name},
+                            size="lg",
+                            block=True,
+                            color="danger"),
+                    ],
+                    className="d-grid gap-5")
                 ])
                 for vehicle_name in vehic_namespace
-            ])
+            ]),
+            html.Div("", id="mc_system_status_individual_vehicle_status_msg")
         ])
+
+    @app_callback(
+        Output("mc_system_status_individual_vehicle_status_msg", "children"),
+        [Input({"type": "mc_btn_mission_abort_drone", "index": ALL}, 'n_clicks'),
+         Input({"type": "mc_btn_emergency_stop_drone", "index": ALL}, 'n_clicks')]
+    )
+    def __control_panel_individual_drone_abort_press(self, abort_n_clicks, estop_n_clicks):
+        ctx = dash.callback_context
+        if ctx.triggered:
+            trigger_id = ctx.triggered[0]['prop_id'].split('.')[0]
+            trigger_dict = json.loads(trigger_id)
+            vehicle_name = trigger_dict["index"]
+            
+            if trigger_dict["type"] == "mc_btn_mission_abort_drone":
+                self.dashboard_node.call_mission_abort_drone(vehicle_name)
+                return f"Abort {vehicle_name} pressed at {get_time()}"
+            else:
+                self.dashboard_node.send_emergency_stop_drone(vehicle_name)
+                return f"ESTOP {vehicle_name} pressed at {get_time()}"
+
+        return "Waiting for button press"
 
     def __generate_control_panel_emergency_stop(self):
         return html.Div([
