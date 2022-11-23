@@ -29,7 +29,7 @@ class Dashboard_Node(Node):
         self.timer_period = 0.01  # seconds
         self.emergency_stop_timer = None
 
-        self.current_allocated_trajectory = self.create_subscriber(Allocations, 'current_allocated_trajectory', self.current_allocation_cb, 10)
+        self.current_allocated_trajectory = self.create_subscription(Allocations, 'current_allocated_trajectory', self.current_allocation_cb, 10)
         self.current_allocation = [] # List sorted by trajectory id
 
         self.current_vehicle_namespaces = []
