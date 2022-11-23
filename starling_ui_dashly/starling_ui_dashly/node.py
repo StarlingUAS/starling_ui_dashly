@@ -5,6 +5,7 @@ import numpy as np
 
 from std_msgs.msg import Empty
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
+from starling_allocator_msgs.msg import Allocations
 from starling_allocator_msgs.srv import AllocateTrajectories
 from builtin_interfaces.msg import Duration
 
@@ -28,6 +29,9 @@ class Dashboard_Node(Node):
         self.timer_period = 0.01  # seconds
         self.emergency_stop_timer = None
 
+        self.current_allocated_trajectory = self.create_subscriber(Allocations, 'current_allocated_trajectory', self.current_allocation_cb, 10)
+        self.current_allocation = [] # List sorted by trajectory id
+
         self.current_vehicle_namespaces = []
 
         self.valid_methods = [
@@ -35,6 +39,13 @@ class Dashboard_Node(Node):
             'random',
             'manual'
         ]
+    
+    def current_allocation_cb(self, msg):
+        a_tuple = {a.trajectory_index: a.vehicle for a in msg.allocation}
+        self.current_allocation = list(sorted(a_tuple, key=a_tuple.get))
+    
+    def get_current_allocation(self):
+        return self.current_allocation
 
     def call_mission_start(self):
         msg = Empty()

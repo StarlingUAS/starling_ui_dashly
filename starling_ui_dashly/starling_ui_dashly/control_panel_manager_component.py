@@ -123,8 +123,10 @@ class Control_Panel_Component(Dashboard_Component):
     def __control_panel_system_status_update(self, n_clicks, n_intervals):
         # Call self.dashboard_node.get_system_status()
         vehic_namespace = self.dashboard_node.get_current_vehicle_namespaces()
+        current_allocation = self.dashboard_node.get_current_allocation()
         return html.Div([ 
             html.P(f"System status update at {get_time()}, {len(vehic_namespace)} vehicles detected"),
+            html.P("No allocation" if len(current_allocation) == 0 else f"Allocation Detected: {current_allocation}"),
             dbc.Row([
                 dbc.Col([
                     html.Div([
@@ -143,7 +145,7 @@ class Control_Panel_Component(Dashboard_Component):
                     ],
                     className="d-grid gap-5")
                 ])
-                for vehicle_name in vehic_namespace
+                for vehicle_name in (vehic_namespace if len(current_allocation) == 0 else current_allocation)
             ]),
             html.Div("", id="mc_system_status_individual_vehicle_status_msg")
         ])
