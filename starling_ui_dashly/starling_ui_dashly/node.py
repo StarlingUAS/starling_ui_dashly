@@ -41,7 +41,7 @@ class Dashboard_Node(Node):
         ]
     
     def current_allocation_cb(self, msg):
-        a_tuple = {a.trajectory_index: a.vehicle for a in msg.allocation}
+        a_tuple = {a.vehicle: a.trajectory_index for a in msg.allocation}
         self.current_allocation = list(sorted(a_tuple, key=a_tuple.get))
     
     def get_current_allocation(self):
