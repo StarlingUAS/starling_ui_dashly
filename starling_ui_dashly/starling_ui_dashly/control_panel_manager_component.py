@@ -124,28 +124,34 @@ class Control_Panel_Component(Dashboard_Component):
         # Call self.dashboard_node.get_system_status()
         vehic_namespace = self.dashboard_node.get_current_vehicle_namespaces()
         current_allocation = self.dashboard_node.get_current_allocation()
+
         return html.Div([ 
             html.P(f"System status update at {get_time()}, {len(vehic_namespace)} vehicles detected"),
             html.P("No allocation" if len(current_allocation) == 0 else f"Allocation Detected: {current_allocation}"),
+            html.P("Firefox access key is Alt+shift+key"),
             dbc.Row([
                 dbc.Col([
                     html.Div([
-                        dbc.Button(
-                            f"Abort {vehicle_name}",
+                        html.Button(
+                            f"Abort {vehicle_name} {'/'+str(idx+4) if idx < 3 else ''}",
                             id={'type': f"mc_btn_mission_abort_drone", 'index': vehicle_name},
-                            size="lg",
-                            block=True,
-                            color="warning"),
-                        dbc.Button(
-                            f"ESTOP {vehicle_name}",
+                            accessKey=str(idx+4) if idx < 3 else None
+                            # size="lg",
+                            # block=True,
+                            # color="warning"
+                        ),
+                        html.Button(
+                            f"ESTOP {vehicle_name}{'/'+str(idx+1) if idx < 3 else ''}",
                             id={'type': f"mc_btn_emergency_stop_drone", 'index': vehicle_name},
-                            size="lg",
-                            block=True,
-                            color="danger"),
+                            accessKey=str(idx+1) if idx < 3 else None
+                            # size="lg",
+                            # block=True,
+                            # color="danger"
+                        ),
                     ],
                     className="d-grid gap-5")
                 ])
-                for vehicle_name in (vehic_namespace if len(current_allocation) == 0 else current_allocation)
+                for idx, vehicle_name in enumerate((vehic_namespace if len(current_allocation) == 0 else current_allocation))
             ]),
             html.Div("", id="mc_system_status_individual_vehicle_status_msg")
         ])
