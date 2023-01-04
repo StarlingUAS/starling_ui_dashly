@@ -81,12 +81,12 @@ class Control_Panel_Component(Dashboard_Component):
             dbc.Row([
                 dbc.Col(html.H2("SYSTEM STATUS")),
                 dbc.Col(dbc.FormGroup([
-                    dbc.Checkbox(id="mc_system_status_refresh_toggle", className="form-check-input", checked=False),
-                    dbc.Label("Auto-Refresh (2s)", html_for="mc_system_status_refresh_toggle", className="form-check-label"),
+                    dbc.Checkbox(id="mc_system_status_refresh_toggle", className="form-check-input", checked=True),
+                    dbc.Label("Auto-Refresh (1s)", html_for="mc_system_status_refresh_toggle", className="form-check-label"),
                 ], check=True)),
                 dbc.Col(dbc.Button("REFRESH", id="mc_system_status_btn_refresh", block=True, color="info"), align="center"),
             ]),
-            dcc.Interval("mc_system_status_interval", interval=2*1000),
+            dcc.Interval("mc_system_status_interval", interval=1000),
             html.Div(id="mc_system_status_div")
         ])
 
